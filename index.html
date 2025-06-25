@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mini UI - Auction Platform</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 2em auto; }
+    input, button { margin: 0.3em 0; padding: 0.5em; width: 100%; }
+    section { border: 1px solid #ccc; padding: 1em; margin-bottom: 1em; }
+    pre { background: #eee; padding: 0.5em; overflow-x: auto; }
+  </style>
+</head>
+<body>
+
+  <h1>Microservice Auction Platform - Mini UI</h1>
+
+  <section id="register">
+    <h2>Inscription</h2>
+    <input id="regName" placeholder="Nom" />
+    <input id="regEmail" placeholder="Email" />
+    <input id="regPass" type="password" placeholder="Mot de passe" />
+    <button onclick="register()">S’inscrire</button>
+    <pre id="regResult"></pre>
+  </section>
+
+  <section id="login">
+    <h2>Connexion</h2>
+    <input id="loginEmail" placeholder="Email" />
+    <input id="loginPass" type="password" placeholder="Mot de passe" />
+    <button onclick="login()">Se connecter</button>
+    <pre id="loginResult"></pre>
+  </section>
+
+  <section id="auctionCreate" style="display:none;">
+    <h2>Créer une enchère</h2>
+    <input id="aucTitle" placeholder="Titre" />
+    <input id="aucDesc" placeholder="Description (optionnelle)" />
+    <input id="aucStartPrice" placeholder="Prix de départ" type="number" />
+    <input id="aucEndsAt" placeholder="Date fin (ex: 2025-07-01T12:00:00Z)" />
+    <button onclick="createAuction()">Créer</button>
+    <pre id="aucResult"></pre>
+  </section>
+
+  <section>
+    <h2>Liste des enchères</h2>
+    <button onclick="loadAuctions()">Recharger</button>
+    <pre id="auctionsList">Aucune enchère chargée.</pre>
+  </section>
+
+  <script>
+    let token = null;
+
+    async function register() {
+      const name = document.getElementById('regName').value;
+      const email = document.getElementById('regEmail').value;
+      const password = document.getElementById('regPass').value;
+      const res = await fetch('http://localhost:3000/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password })
+      });
+      const json = await res.json();
+      document.getElementById('regResult').textContent = JSON.stringify(json, null, 2);
+    }
+
+    async function login() {
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPass').value;
+      const res = await fetch('http://localhost:3000/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const json = await res.json();
+      if (res.ok && json.token) {
+        token = json.token;
+        document.getElementById('loginResult').textContent = 'Connecté avec succès.';
+        document.getElementById('auctionCreate').style.display = 'block';
+      } else {
+        document.getElementById('loginResult').textContent = JSON.stringify(json, null, 2);
+      }
+    }
+
+    async function createAuction() {
+      const title = document.getElementById('aucTitle').value;
+      const description = document.getElementById('aucDesc').value;
+      const starting_price = Number(document.getElementById('aucStartPrice').value);
+      const ends_at = document.getElementById('aucEndsAt').value;
+      const res = await fetch('http://localhost:3000/auctions', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ title, description, starting_price, ends_at })
+      });
+      const json = await res.json();
+      document.getElementById('aucResult').textContent = JSON.stringify(json, null, 2);
+      loadAuctions();
+    }
+
+    async function loadAuctions() {
+      const res = await fetch('http://localhost:3000/auctions');
+      const json = await res.json();
+      document.getElementById('auctionsList').textContent = JSON.stringify(json, null, 2);
+    }
+
+    // Charger les enchères au démarrage
+    loadAuctions();
+  </script>
+
+</body>
+</html>
